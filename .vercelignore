@@ -25,3 +25,10 @@ key.pem
 
 # Local test files
 test_webcam.py
+
+
+models/
+*.onnx
+*.pkl
+*.dat
+*.npy

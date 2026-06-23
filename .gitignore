@@ -39,3 +39,6 @@ key.pem
 
 # Logs
 *.log
+
+.vercel
+.env*
