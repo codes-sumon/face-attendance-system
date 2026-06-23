@@ -77,6 +77,30 @@
             </div>
         </div>
 
+        <!-- Existing face image preview -->
+        {% if student.get('face_image') %}
+        <div class="form-group">
+            <label class="form-label">Face Photo</label>
+            <div class="existing-face-preview">
+                <img src="data:image/jpeg;base64,{{ student.face_image }}" alt="Current face photo">
+            </div>
+            <p class="form-hint">Upload a new photo above to replace this image.</p>
+        </div>
+        {% else %}
+        <div class="form-group">
+            <label class="form-label">Face Photo</label>
+            <div class="existing-face-preview existing-face-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="margin-bottom:8px;opacity:0.4;">
+                    <path d="M15 8h.01M12 20h-5a3 3 0 01-3-3V7a3 3 0 013-3h10a3 3 0 013 3v5"/>
+                    <circle cx="17" cy="17" r="3"/>
+                    <path d="M21 21l-1.9-1.9"/>
+                </svg>
+                <p>Face data is saved and used for recognition.</p>
+                <p style="font-size:0.85rem;color:var(--gray-400);">No display photo stored. Upload one above to add a profile picture.</p>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Preview info -->
         <div id="face-status" class="face-status" style="display:none;">
             <span id="face-status-text"></span>

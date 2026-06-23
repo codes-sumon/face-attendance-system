@@ -108,6 +108,33 @@ a:hover {
     color: var(--primary);
 }
 
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+}
+.nav-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--gray-600);
+    border-radius: 2px;
+    transition: all 0.25s ease;
+}
+.nav-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+.nav-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+.nav-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
 .nav-links {
     display: flex;
     gap: 4px;
@@ -124,6 +151,33 @@ a:hover {
 .nav-link:hover {
     background: var(--gray-100);
     color: var(--primary);
+}
+
+/* ─── Mobile Nav ─── */
+@media (max-width: 768px) {
+    .nav-toggle {
+        display: flex;
+    }
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.98);
+        border-bottom: 1px solid var(--gray-200);
+        padding: 12px 24px;
+        gap: 2px;
+        box-shadow: var(--shadow-md);
+    }
+    .nav-links.open {
+        display: flex;
+    }
+    .nav-link {
+        padding: 12px 16px;
+        font-size: 1rem;
+    }
 }
 
 /* ─── Main Content ─── */
@@ -458,6 +512,33 @@ a:hover {
     box-shadow: var(--shadow);
 }
 
+.existing-face-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+    background: var(--gray-100);
+    border-radius: var(--radius-sm);
+    min-height: 80px;
+}
+.existing-face-preview img {
+    max-width: 240px;
+    max-height: 240px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    object-fit: cover;
+}
+.existing-face-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    text-align: center;
+    gap: 2px;
+}
+
 /* ─── Webcam ─── */
 .webcam-container {
     position: relative;
@@ -470,7 +551,12 @@ a:hover {
     justify-content: center;
 }
 
-.webcam-container video,
+.webcam-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
 .webcam-container canvas {
     width: 100%;
     height: 100%;
@@ -956,6 +1042,7 @@ code {
     display: block;
     object-fit: contain;
     max-width: 100%;
+    transform: scaleX(-1);
 }
 .live-video-wrapper canvas {
     position: absolute;

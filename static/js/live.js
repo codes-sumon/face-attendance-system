@@ -214,9 +214,10 @@
 
         for (const face of result.faces) {
             const [nx1, ny1, nx2, ny2] = face.bbox;
-            const x1 = Math.round(nx1 * cw);
+            // Mirror X coordinates so boxes align with the CSS-flipped video
+            const x1 = cw - Math.round(nx2 * cw);
             const y1 = Math.round(ny1 * ch);
-            const x2 = Math.round(nx2 * cw);
+            const x2 = cw - Math.round(nx1 * cw);
             const y2 = Math.round(ny2 * ch);
 
             if (face.matched) {
@@ -225,58 +226,48 @@
                 ctx.lineWidth = BOX_LINE_WIDTH;
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-                // Label background
+                // Name label (no background — shadow for readability)
                 const label = `${face.name} (${(face.confidence * 100).toFixed(1)}%)`;
                 ctx.font = "bold 14px system-ui, -apple-system, sans-serif";
-                const metrics = ctx.measureText(label);
-                const lh = 22;
-                const lw = metrics.width + 14;
-
-                ctx.fillStyle = "rgba(0, 120, 40, 0.85)";
-                const labelY = y1 - lh - 6;
-                roundRect(ctx, x1, labelY, lw, lh, 4);
-                ctx.fill();
-
-                // Label text
+                ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+                ctx.shadowBlur = 4;
                 ctx.fillStyle = "#fff";
-                ctx.fillText(label, x1 + 7, labelY + 16);
+                const lh = 22;
+                const labelY = y1 - lh - 6;
+                ctx.fillText(label, x1 + 6, labelY + 16);
 
                 // ID text
                 ctx.font = "11px system-ui, -apple-system, sans-serif";
-                ctx.fillStyle = "rgba(200, 255, 200, 0.8)";
-                ctx.fillText(`ID: ${face.student_id}`, x1 + 7, labelY + lh + 14);
+                ctx.fillStyle = "rgba(200, 255, 200, 0.95)";
+                ctx.shadowBlur = 3;
+                ctx.fillText(`ID: ${face.student_id}`, x1 + 6, labelY + lh + 14);
+                ctx.shadowBlur = 0;
             } else {
                 // ── Red box for unknown ──
                 ctx.strokeStyle = "rgba(220, 50, 50, 0.9)";
                 ctx.lineWidth = BOX_LINE_WIDTH;
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-                // Label background
+                // Unknown label (no background — shadow for readability)
                 const label = "Unknown";
                 ctx.font = "bold 14px system-ui, -apple-system, sans-serif";
-                const metrics = ctx.measureText(label);
-                const lh = 22;
-                const lw = metrics.width + 14;
-
-                ctx.fillStyle = "rgba(140, 30, 30, 0.85)";
-                const labelY = y1 - lh - 6;
-                roundRect(ctx, x1, labelY, lw, lh, 4);
-                ctx.fill();
-
-                // Label text
+                ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+                ctx.shadowBlur = 4;
                 ctx.fillStyle = "#ffc0c0";
-                ctx.fillText(label, x1 + 7, labelY + 16);
+                const lh = 22;
+                const labelY = y1 - lh - 6;
+                ctx.fillText(label, x1 + 6, labelY + 16);
+                ctx.shadowBlur = 0;
             }
         }
     }
 
-    // ─── Rounded rectangle helper (polyfill for roundRect) ───
+    // ─── Rounded rectangle helper ───
     function roundRect(ctx, x, y, w, h, r) {
         if (typeof ctx.roundRect === "function") {
             ctx.roundRect(x, y, w, h, r);
             return;
         }
-        // Manual implementation for older browsers
         ctx.beginPath();
         ctx.moveTo(x + r, y);
         ctx.lineTo(x + w - r, y);

@@ -26,6 +26,7 @@ from face_utils import (
     extract_embedding,
     find_best_match,
     load_image_from_bytes,
+    image_to_base64_jpeg,
     detect_faces,
     detect_faces_fast,
 )
@@ -116,9 +117,12 @@ def register():
                 )
                 return render_template("register.html")
 
+        # Convert image to base64 for storage
+        face_image_b64 = image_to_base64_jpeg(image_data)
+
         # Register in Supabase
         try:
-            register_student(student_id, name, embedding)
+            register_student(student_id, name, embedding, face_image=face_image_b64)
             flash(f"Student '{name}' registered successfully!", "success")
             return redirect(url_for("index"))
         except Exception as e:
@@ -146,13 +150,16 @@ def edit_student(student_id: str):
         # Check if a new face image was provided
         image_data = _get_image_from_request()
         embedding = None
+        face_image_b64 = None
         if image_data is not None:
             embedding = extract_embedding(image_data)
             if embedding is None:
                 flash("No face detected in the new image. Keeping existing face data.", "warning")
+            else:
+                face_image_b64 = image_to_base64_jpeg(image_data)
 
         try:
-            update_student(student_id, name, face_embedding=embedding)
+            update_student(student_id, name, face_embedding=embedding, face_image=face_image_b64)
             flash(f"Student '{name}' updated successfully!", "success")
             return redirect(url_for("attendance_report"))
         except Exception as e:
@@ -195,7 +202,7 @@ def mark_attendance_view():
 
         # Mark attendance
         try:
-            mark_attendance(student_id, name, round(confidence, 4))
+            mark_attendance(student_id, round(confidence, 4))
             flash(
                 f"Attendance marked for {name} (ID: {student_id}) "
                 f"with {confidence:.1%} confidence!",
@@ -217,6 +224,16 @@ def attendance_report():
     records = get_attendance_records(limit=200, student_id=student_id_filter or None)
     students = get_all_students()
     summary = get_attendance_summary()
+
+    # Build a student_id → name map from the students table (single source of truth)
+    student_names = {s["student_id"]: s["name"] for s in students}
+
+    # Override every record's name with the current name from the students table
+    for r in records:
+        r["name"] = student_names.get(r["student_id"], "Unknown")
+    for s in summary:
+        s["name"] = student_names.get(s["student_id"], "Unknown")
+
     return render_template(
         "attendance_report.html",
         records=records,
@@ -265,6 +282,9 @@ def _check_cooldown(student_id: str) -> bool:
 
 
 # ─── API Routes ───
+
+
+@app.route("/api/students")
 def api_get_students():
     """API: Get all registered students."""
     students = get_all_students()
@@ -330,7 +350,7 @@ def api_check_face():
         student_id, name, confidence = match
         # Auto-mark attendance via API
         try:
-            mark_attendance(student_id, name, round(confidence, 4))
+            mark_attendance(student_id, round(confidence, 4))
         except Exception as e:
             logger.error(f"Auto attendance failed: {e}")
         return jsonify({
@@ -392,7 +412,7 @@ def api_live_detect():
                 # Auto-mark attendance with cooldown check
                 if _check_cooldown(student_id):
                     try:
-                        mark_attendance(student_id, name, round(confidence, 4))
+                        mark_attendance(student_id, round(confidence, 4))
                         logger.info(f"[LIVE] Attendance logged: {name} ({student_id}) at {confidence:.1%}")
                     except Exception as e:
                         logger.error(f"[LIVE] Failed to log attendance: {e}")

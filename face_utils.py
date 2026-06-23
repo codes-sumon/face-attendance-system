@@ -3,6 +3,7 @@ Face detection and recognition utilities using InsightFace.
 """
 import os
 import pickle
+import base64
 import numpy as np
 import cv2
 import insightface
@@ -220,6 +221,26 @@ def load_image_from_bytes(file_bytes: bytes) -> Optional[np.ndarray]:
     if image is None:
         return None
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+
+def image_to_base64_jpeg(image: np.ndarray, quality: int = 85) -> Optional[str]:
+    """
+    Convert a numpy RGB image to a base64-encoded JPEG string.
+    Useful for storing face images in the database.
+
+    Returns:
+        Base64 string, or None if encoding failed.
+    """
+    if image is None or image.size == 0:
+        return None
+    try:
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
+        success, buffer = cv2.imencode(".jpg", cv2.cvtColor(image, cv2.COLOR_RGB2BGR), encode_param)
+        if not success:
+            return None
+        return base64.b64encode(buffer.tobytes()).decode("utf-8")
+    except Exception:
+        return None
 
 
 def crop_face(image: np.ndarray, bbox: List[float], margin: float = 0.3) -> np.ndarray:
