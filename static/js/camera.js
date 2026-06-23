@@ -20,9 +20,25 @@
 
     let stream = null;
 
+    // ─── Check browser camera support ───
+    function checkCameraSupport() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            let hint = "";
+            if (window.location.hostname === "0.0.0.0") {
+                hint = "Open http://localhost:5000 instead of http://0.0.0.0:5000.";
+            } else if (window.location.protocol === "file:") {
+                hint = "Open via the Flask server (http://localhost:5000), not as a local file.";
+            } else {
+                hint = "Your browser does not support camera access. Try Chrome, Firefox, or Edge.";
+            }
+            throw new Error(hint);
+        }
+    }
+
     // ─── Start camera ───
     async function startCamera() {
         try {
+            checkCameraSupport();
             stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
                 audio: false,
@@ -34,8 +50,20 @@
             captureBtn.style.display = "inline-flex";
             if (retakeBtn) retakeBtn.style.display = "none";
         } catch (err) {
-            alert("Camera access denied or not available. Please use the upload option.");
             console.error("Camera error:", err);
+            let msg = "Camera access denied or not available. Please use the upload option.";
+            if (err.name === "NotReadableError") {
+                msg = "Camera is in use by another app (Zoom, Teams, another browser tab). "
+                    + "Close other camera apps and try again, or use the upload option.";
+            } else if (err.name === "NotAllowedError") {
+                msg = "Camera permission was denied. Allow camera access in your browser "
+                    + "settings, or use the upload option.";
+            } else if (err.name === "NotFoundError") {
+                msg = "No camera found. Connect a webcam or use the upload option.";
+            } else if (err.message) {
+                msg = err.message + " Please use the upload option.";
+            }
+            alert(msg);
         }
     }
 

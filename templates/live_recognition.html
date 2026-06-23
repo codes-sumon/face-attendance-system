@@ -2,13 +2,14 @@
 {% block title %}Live Face Recognition{% endblock %}
 {% block content %}
 <div class="live-container">
-    <!-- Left: Video Feed -->
+    <!-- Left: Camera Feed (client-side) -->
     <div class="live-video-section">
         <div class="live-video-wrapper">
-            <img id="live-video" src="{{ url_for('video_feed_live') }}" alt="Live Webcam Feed">
+            <video id="live-video" autoplay playsinline muted></video>
+            <canvas id="live-canvas"></canvas>
             <div class="live-video-overlay" id="video-overlay">
                 <div class="spinner"></div>
-                <p>Connecting to webcam...</p>
+                <p id="overlay-text">Requesting camera access...</p>
             </div>
         </div>
     </div>
@@ -23,7 +24,7 @@
         <div class="live-stats-grid">
             <div class="live-stat-card">
                 <div class="live-stat-value" id="stat-fps">0</div>
-                <div class="live-stat-label">FPS</div>
+                <div class="live-stat-label">Scan Rate</div>
             </div>
             <div class="live-stat-card">
                 <div class="live-stat-value" id="stat-faces">0</div>
@@ -42,7 +43,7 @@
         <div class="live-info-section">
             <div class="live-info-row">
                 <span class="live-info-label">Camera</span>
-                <span class="live-info-value" id="info-camera">{{ camera_id }}</span>
+                <span class="live-info-value">{{ camera_id }}</span>
             </div>
             <div class="live-info-row">
                 <span class="live-info-label">Date/Time</span>
@@ -86,151 +87,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-const STATS_POLL_INTERVAL = 1500; // ms
-const LOG_POLL_INTERVAL = 3000;
-
-// ─── Update Stats ───
-async function fetchStats() {
-    try {
-        const res = await fetch("/api/live-stats");
-        const data = await res.json();
-
-        document.getElementById("stat-fps").textContent = data.fps || 0;
-        document.getElementById("stat-faces").textContent = data.total_faces || 0;
-        document.getElementById("stat-recognized").textContent = data.recognized || 0;
-        document.getElementById("stat-unknown").textContent = data.unknown || 0;
-        document.getElementById("info-datetime").textContent = data.current_time || "--";
-
-        const statusEl = document.getElementById("info-status");
-        const badgeEl = document.getElementById("status-badge");
-        if (data.status === "running") {
-            statusEl.textContent = "Running";
-            statusEl.style.color = "var(--success)";
-            badgeEl.className = "live-badge live-badge-active";
-            badgeEl.textContent = "● LIVE";
-        } else if (data.status && data.status.startsWith("error")) {
-            statusEl.textContent = "Error";
-            statusEl.style.color = "var(--danger)";
-            badgeEl.className = "live-badge live-badge-error";
-            badgeEl.textContent = "● ERROR";
-        } else {
-            statusEl.textContent = data.status || "Unknown";
-            statusEl.style.color = "var(--gray-400)";
-            badgeEl.className = "live-badge live-badge-inactive";
-            badgeEl.textContent = "● OFFLINE";
-        }
-    } catch (e) {
-        console.error("Stats poll error:", e);
-    }
-}
-
-// ─── Recent Logs ───
-let lastLogTime = "";
-
-async function fetchRecentLogs() {
-    try {
-        const res = await fetch("/api/attendance/today");
-        const records = await res.json();
-        const logList = document.getElementById("log-list");
-
-        if (!records || records.length === 0) {
-            logList.innerHTML = '<div class="live-log-empty">No logs today.</div>';
-            return;
-        }
-
-        // Show last 10 records
-        const recent = records.slice(0, 10);
-        logList.innerHTML = recent
-            .map(
-                (r) =>
-                    `<div class="live-log-entry">
-                        <div class="live-log-name">${r.name}</div>
-                        <div class="live-log-id">${r.student_id}</div>
-                        <div class="live-log-time">${(r.timestamp || "").replace("T", " ").substring(0, 19)}</div>
-                    </div>`
-            )
-            .join("");
-    } catch (e) {
-        console.error("Logs poll error:", e);
-    }
-}
-
-// ─── Video Feed Error Handler ───
-document.addEventListener("DOMContentLoaded", () => {
-    const video = document.getElementById("live-video");
-    const overlay = document.getElementById("video-overlay");
-
-    // For MJPEG streams, the 'load' event may not fire reliably.
-    // Use a combination approach:
-    // 1. Try the load event (works in some browsers)
-    // 2. Poll for the image actually rendering
-    // 3. Fall back to a timeout-based hide
-
-    let overlayHidden = false;
-
-    function hideOverlay() {
-        if (!overlayHidden) {
-            overlayHidden = true;
-            overlay.style.display = "none";
-        }
-    }
-
-    function showError() {
-        overlay.innerHTML = `
-            <div class="live-error-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                </svg>
-            </div>
-            <p>Webcam feed unavailable</p>
-            <p class="live-error-hint">Make sure the webcam is connected and not in use.</p>
-        `;
-        overlay.style.display = "flex";
-        overlayHidden = false;
-    }
-
-    // Try load event
-    video.addEventListener("load", hideOverlay);
-    video.addEventListener("error", showError);
-
-    // Poll for image content — MJPEG streams update the img src
-    // When the browser renders the first frame, naturalWidth > 0
-    const pollInterval = setInterval(() => {
-        if (video.naturalWidth > 0 && video.naturalHeight > 0) {
-            hideOverlay();
-            clearInterval(pollInterval);
-        }
-    }, 200);
-
-    // Safety timeout — hide overlay after 5s even if load didn't fire
-    // (if we got this far, the stream is likely working)
-    setTimeout(() => {
-        clearInterval(pollInterval);
-        if (!overlayHidden) {
-            // Check if we actually have content
-            if (video.naturalWidth > 0) {
-                hideOverlay();
-            } else {
-                // Try once more after a delay
-                setTimeout(() => {
-                    if (video.naturalWidth > 0) {
-                        hideOverlay();
-                    }
-                }, 3000);
-            }
-        }
-    }, 5000);
-
-    // Initial fetch
-    fetchStats();
-    fetchRecentLogs();
-
-    // Poll stats
-    setInterval(fetchStats, STATS_POLL_INTERVAL);
-    setInterval(fetchRecentLogs, LOG_POLL_INTERVAL);
-});
-</script>
+<script src="{{ url_for('static', filename='js/live.js') }}"></script>
 {% endblock %}
