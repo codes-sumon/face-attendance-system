@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Attendance Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Attendance Reports</h1>
+    <p>View and filter attendance records.</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="summary-number">{{ records|length }}</div>
+        <div class="summary-label">Total Records</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-number">{{ students|length }}</div>
+        <div class="summary-label">Registered Students</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-number">{{ summary|length }}</div>
+        <div class="summary-label">Active Students</div>
+    </div>
+</div>
+
+<!-- Attendance Summary Table -->
+<div class="card">
+    <div class="card-header">
+        <h2>Attendance Summary by Student</h2>
+    </div>
+    <div class="card-body">
+        {% if summary %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Total Attendance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in summary %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><code>{{ s.student_id }}</code></td>
+                        <td>{{ s.name }}</td>
+                        <td><span class="badge badge-primary">{{ s.total }}</span></td>
+                        <td class="actions-cell">
+                            <a href="{{ url_for('edit_student', student_id=s.student_id) }}"
+                               class="btn btn-sm btn-outline" title="Edit student">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger-outline"
+                                    onclick="confirmDelete('{{ s.student_id }}', '{{ s.name }}')"
+                                    title="Delete student">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No attendance records yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card">
+    <div class="card-header">
+        <h2>Attendance Records</h2>
+        <form method="GET" class="filter-form">
+            <select name="student_id" class="form-input filter-select" onchange="this.form.submit()">
+                <option value="">All Students</option>
+                {% for s in students %}
+                <option value="{{ s.student_id }}" {% if filter_id == s.student_id %}selected{% endif %}>
+                    {{ s.student_id }} — {{ s.name }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if filter_id %}
+            <a href="{{ url_for('attendance_report') }}" class="btn btn-sm btn-outline">Clear Filter</a>
+            {% endif %}
+        </form>
+    </div>
+    <div class="card-body">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Timestamp</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><code>{{ r.student_id }}</code></td>
+                        <td>{{ r.name }}</td>
+                        <td>{{ r.timestamp | replace("T", " ") | truncate(19, True, "") }}</td>
+                        <td>
+                            <span class="badge {% if r.confidence >= 0.5 %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ "%.1f"|format(r.confidence * 100) }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <p>No attendance records found.</p>
+            <a href="{{ url_for('mark_attendance_view') }}" class="btn btn-primary">Mark Attendance</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Delete Student</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete <strong id="delete-student-name"></strong>?</p>
+            <p class="text-muted">Student ID: <code id="delete-student-id"></code></p>
+            <p class="text-danger">This will also delete all attendance records for this student. This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="executeDelete()">Delete</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

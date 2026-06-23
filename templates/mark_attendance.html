@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Mark Attendance</h1>
+    <p>Capture or upload a face photo to automatically identify and mark attendance.</p>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('mark_attendance_view') }}" enctype="multipart/form-data" id="attendance-form">
+        <!-- Image Source Tabs -->
+        <div class="form-group">
+            <label class="form-label">Face Image</label>
+            <div class="tab-bar">
+                <button type="button" class="tab active" data-tab="upload">Upload Photo</button>
+                <button type="button" class="tab" data-tab="webcam">Use Webcam</button>
+            </div>
+
+            <!-- Upload Tab -->
+            <div class="tab-content active" id="tab-upload">
+                <div class="file-dropzone" id="dropzone">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropzone-icon">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p class="dropzone-text">Drag & drop an image here, or <span class="link">browse</span></p>
+                    <p class="dropzone-hint">Supports JPG, PNG — Max 10MB</p>
+                    <input type="file" id="image" name="image" accept="image/*" style="display:none">
+                </div>
+                <div class="preview-container" id="preview-upload" style="display:none;">
+                    <img id="upload-preview-img" alt="Preview">
+                    <button type="button" class="btn btn-sm btn-outline" id="remove-upload">Remove</button>
+                </div>
+            </div>
+
+            <!-- Webcam Tab -->
+            <div class="tab-content" id="tab-webcam">
+                <div class="webcam-container" id="webcam-container">
+                    <video id="webcam-video" autoplay playsinline></video>
+                    <canvas id="webcam-canvas" style="display:none;"></canvas>
+                    <div class="webcam-overlay" id="webcam-overlay">
+                        <p>Click below to start your camera</p>
+                    </div>
+                </div>
+                <div class="webcam-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-start-cam">Start Camera</button>
+                    <button type="button" class="btn btn-primary" id="btn-capture" style="display:none;">Capture &amp; Mark</button>
+                    <button type="button" class="btn btn-outline" id="btn-retake" style="display:none;">Retake</button>
+                </div>
+                <input type="hidden" name="image_data" id="image_data">
+            </div>
+        </div>
+
+        <!-- Result display -->
+        <div id="face-status" class="face-status" style="display:none;">
+            <span id="face-status-text"></span>
+        </div>
+
+        <!-- Submit -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg btn-full" id="btn-submit">
+                Mark Attendance
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+<script>
+// Drag & drop and file upload
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('image');
+const uploadPreview = document.getElementById('preview-upload');
+const uploadPreviewImg = document.getElementById('upload-preview-img');
+const removeUploadBtn = document.getElementById('remove-upload');
+
+dropzone.addEventListener('click', () => fileInput.click());
+
+dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+});
+dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+});
+dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFile(e.dataTransfer.files[0]);
+    }
+});
+
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+        handleFile(fileInput.files[0]);
+    }
+});
+
+function handleFile(file) {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        uploadPreviewImg.src = e.target.result;
+        dropzone.style.display = 'none';
+        uploadPreview.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+removeUploadBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    uploadPreview.style.display = 'none';
+    dropzone.style.display = 'block';
+    document.getElementById('face-status').style.display = 'none';
+});
+</script>
+{% endblock %}

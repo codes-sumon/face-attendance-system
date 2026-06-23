@@ -1,0 +1,11 @@
+Flask>=3.0.0
+Flask-CORS>=4.0.0
+insightface>=0.7.3
+onnxruntime>=1.15.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+supabase>=2.0.0
+python-dotenv>=1.0.0
+gunicorn>=22.0.0
+pyopenssl>=24.0.0

@@ -1,0 +1,41 @@
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+*.so
+
+# ─── Virtual Environment ───
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# ─── Environment Variables ───
+.env
+
+# ─── SSL Certificates ───
+cert.pem
+key.pem
+
+# ─── IDE / Editor ───
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ─── Project Specific ───
+# InsightFace model cache (downloads on first run)
+.insightface/
+
+# Jupyter / Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log

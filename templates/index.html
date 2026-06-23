@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Home - Face Attendance System{% endblock %}
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Face Attendance System</h1>
+        <p class="hero-subtitle">
+            Automated attendance tracking using AI-powered face recognition.
+            Register students once and mark attendance with a simple photo.
+        </p>
+        <div class="hero-actions">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                    <circle cx="8.5" cy="7" r="4"/>
+                    <line x1="20" y1="8" x2="20" y2="14"/>
+                    <line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
+                Register Student
+            </a>
+            <a href="{{ url_for('mark_attendance_view') }}" class="btn btn-secondary btn-lg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Mark Attendance
+            </a>
+            <a href="{{ url_for('attendance_report') }}" class="btn btn-outline btn-lg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                View Reports
+            </a>
+        </div>
+    </div>
+    <div class="hero-visual">
+        <div class="hero-card">
+            <div class="hero-card-header">Quick Stats</div>
+            <div class="hero-card-body" id="quick-stats">
+                <div class="stat-row">
+                    <span class="stat-label">Students</span>
+                    <span class="stat-value" id="stat-students">--</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Today's Attendance</span>
+                    <span class="stat-value" id="stat-today">--</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Records</span>
+                    <span class="stat-value" id="stat-total">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <div class="feature-card">
+        <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                <path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+        </div>
+        <h3>Face Registration</h3>
+        <p>Register students with their ID, name, and a single face photo. The system extracts a unique face signature.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </div>
+        <h3>Instant Recognition</h3>
+        <p>Upload a photo or use your webcam. InsightFace detects and matches faces against registered students.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+        </div>
+        <h3>Auto Attendance</h3>
+        <p>Attendance is logged automatically with timestamps and confidence scores. View detailed reports anytime.</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load quick stats on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const [studentsRes, todayRes] = await Promise.all([
+            fetch('/api/students'),
+            fetch('/api/attendance/today')
+        ]);
+        const students = await studentsRes.json();
+        const today = await todayRes.json();
+
+        document.getElementById('stat-students').textContent = students.length;
+
+        const todayCount = today.length;
+        document.getElementById('stat-today').textContent = todayCount;
+
+        // Total from attendance report summary
+        const totalRes = await fetch('/api/attendance/today');
+        // Count unique student IDs in today for a more interesting stat
+        const uniqueToday = new Set(today.map(r => r.student_id)).size;
+        document.getElementById('stat-total').textContent = today.length > 0
+            ? `${today.length} (${uniqueToday} unique)`
+            : '0';
+    } catch (e) {
+        console.error('Failed to load stats:', e);
+    }
+});
+</script>
+{% endblock %}

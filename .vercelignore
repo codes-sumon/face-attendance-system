@@ -1,0 +1,27 @@
+# ─── Vercel Ignore ───
+# Exclude these files/directories from the Vercel deployment
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment (Vercel installs deps itself)
+.venv/
+venv/
+
+# Secrets
+.env
+
+# SSL certs (not needed on Vercel)
+cert.pem
+key.pem
+
+# IDE
+.vscode/
+.idea/
+
+# InsightFace model cache (downloaded at runtime on Vercel)
+.insightface/
+
+# Local test files
+test_webcam.py
